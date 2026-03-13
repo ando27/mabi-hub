@@ -264,29 +264,87 @@ function VolumePieChart({ data }) {
   )
 }
 
+function MultiSelectDropdown({ label, options, selected, onChange }) {
+  const [open, setOpen] = useState(false)
+  const allSelected = selected.length === 0
+  const displayLabel = allSelected
+    ? 'All'
+    : selected.length === 1
+    ? selected[0].length > 22 ? selected[0].slice(0, 22) + '…' : selected[0]
+    : `${selected.length} selected`
+
+  const toggle = (val) => {
+    if (selected.includes(val)) onChange(selected.filter(v => v !== val))
+    else onChange([...selected, val])
+  }
+
+  return (
+    <div className="relative">
+      <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">{label}</label>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-colors"
+      >
+        <span className={allSelected ? 'text-gray-400' : 'text-gray-700 font-medium'}>{displayLabel}</span>
+        <svg className={`w-4 h-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-52 overflow-y-auto">
+          {/* Select All */}
+          <button
+            onClick={() => { onChange([]); setOpen(false) }}
+            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 border-b border-gray-100 ${allSelected ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}
+          >
+            <span className={`w-4 h-4 rounded border flex items-center justify-center text-xs ${allSelected ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300'}`}>
+              {allSelected && '✓'}
+            </span>
+            All campaigns
+          </button>
+          {options.map(opt => {
+            const checked = selected.includes(opt)
+            return (
+              <button
+                key={opt}
+                onClick={() => toggle(opt)}
+                className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors"
+              >
+                <span className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center text-xs ${checked ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300'}`}>
+                  {checked && '✓'}
+                </span>
+                <span className="truncate text-gray-700">{opt}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ControlPanel({ data, filters, setFilters }) {
   if (!data || data.length === 0) return null
   const cols = Object.keys(data[0])
   const nameCol = findCol(data, ['name', 'campaign'])
   const nameOptions = nameCol ? [...new Set(data.map(r => r[nameCol]))] : []
   const numCols = ['Total Sent', 'Delivered', 'Unique Opens', 'Unique Clicks', 'Bounced'].filter(c => cols.includes(c))
+  const selectedNames = filters[nameCol]?.includes || []
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
       <h3 className="text-sm font-semibold text-gray-700">⚙️ Filters</h3>
+
       {nameCol && (
-        <div>
-          <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Campaign Name</label>
-          <select
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
-            value={filters[nameCol]?.equals || ''}
-            onChange={e => setFilters(f => ({ ...f, [nameCol]: { ...f[nameCol], equals: e.target.value } }))}
-          >
-            <option value="">All</option>
-            {nameOptions.map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-        </div>
+        <MultiSelectDropdown
+          label="Campaign Name"
+          options={nameOptions}
+          selected={selectedNames}
+          onChange={vals => setFilters(f => ({ ...f, [nameCol]: { ...f[nameCol], includes: vals } }))}
+        />
       )}
+
       {numCols.map(col => (
         <div key={col}>
           <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">{col}</label>
@@ -304,6 +362,7 @@ function ControlPanel({ data, filters, setFilters }) {
           </div>
         </div>
       ))}
+
       <button onClick={() => setFilters({})}
         className="w-full text-xs text-gray-400 hover:text-red-400 py-2 border border-gray-100 rounded-lg hover:bg-red-50 transition-colors">
         Clear all filters
@@ -381,7 +440,7 @@ export default function AnalyticsDashboard() {
     let res = [...processedData]
     Object.keys(filters).forEach(col => {
       const f = filters[col]
-      if (f.equals && f.equals !== '') res = res.filter(r => String(r[col]) === String(f.equals))
+      if (f.includes && f.includes.length > 0) res = res.filter(r => f.includes.includes(String(r[col])))
       if (f.min !== undefined && f.min !== '') res = res.filter(r => parseNum(r[col]) >= parseFloat(f.min))
       if (f.max !== undefined && f.max !== '') res = res.filter(r => parseNum(r[col]) <= parseFloat(f.max))
     })
