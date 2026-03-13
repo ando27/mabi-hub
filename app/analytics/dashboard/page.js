@@ -1,4 +1,4 @@
-import ToolLayout from '../../components/ToolLayout'
+import ToolLayout from '@/components/ToolLayout'
 
 export default function AnalyticsDashboard() {
   return (

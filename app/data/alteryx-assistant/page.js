@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import ToolLayout from '../../components/ToolLayout'
+import ToolLayout from '@/components/ToolLayout'
 
 export default function AlteryxAssistant() {
   const [form, setForm] = useState({ goal: '', currentSteps: '', error: '', experience: 'intermediate' })

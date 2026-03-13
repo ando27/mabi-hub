@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import ToolLayout from '../../components/ToolLayout'
+import ToolLayout from '@/components/ToolLayout'
 
 export default function DataSummarizer() {
   const [form, setForm] = useState({ data: '', context: '', audience: 'internal team' })
